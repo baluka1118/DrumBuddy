@@ -5,14 +5,35 @@
                           xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                           xmlns:vm="clr-namespace:DrumBuddy.ViewModels.HelperViewModels"
                           xmlns:rxui="http://reactiveui.net"
-                          mc:Ignorable="d"
-                          x:Class="DrumBuddy.Views.HelperViews.RythmicGroupView" >
+                          xmlns:helperViews="clr-namespace:DrumBuddy.Views.HelperViews"
+                          mc:Ignorable="d" x:CompileBindings="True"
+                          x:Class="DrumBuddy.Views.HelperViews.RythmicGroupView">
     <Design.DataContext>
         <vm:RythmicGroupViewModel/>
     </Design.DataContext>
-    <Canvas>
-        <Path x:Name="TempEllipse" 
-              x:DataType="vm:RythmicGroupViewModel"
-              Fill="{Binding Color}" Canvas.Top="50" Canvas.Left="50"></Path>
-    </Canvas>
+    <Grid>
+        <!-- Staff lines -->
+        <Canvas x:Name="StaffCanvas" Height="100" IsHitTestVisible="False">
+            <Line StartPoint="0,20" EndPoint="200,20" Stroke="Black" StrokeThickness="1"/>
+            <Line StartPoint="0,40" EndPoint="200,40" Stroke="Black" StrokeThickness="1"/>
+            <Line StartPoint="0,60" EndPoint="200,60" Stroke="Black" StrokeThickness="1"/>
+            <Line StartPoint="0,80" EndPoint="200,80" Stroke="Black" StrokeThickness="1"/>
+            <Line StartPoint="0,100" EndPoint="200,100" Stroke="Black" StrokeThickness="1"/>
+        </Canvas>
+        
+        <!-- Note groups will be placed here -->
+        <ItemsControl x:Name="NoteGroupsItemsControl" 
+                      ItemsSource="{Binding NoteGroups}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <helperViews:NoteGroupView/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
 </rxui:ReactiveUserControl>

@@ -1,0 +1,14 @@
+﻿<rxui:ReactiveUserControl x:TypeArguments="vm:NoteGroupViewModel" 
+                          xmlns="https://github.com/avaloniaui"
+                          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                          xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                          xmlns:vm="clr-namespace:DrumBuddy.ViewModels.HelperViewModels"
+                          xmlns:rxui="http://reactiveui.net"
+                          mc:Ignorable="d"
+                          x:Class="DrumBuddy.Views.HelperViews.NoteGroupView">
+    <Canvas x:Name="NoteCanvas" Width="30" Height="100">
+        <!-- Staff lines will be drawn by the parent -->
+        <!-- Note elements will be drawn dynamically in code-behind -->
+    </Canvas>
+</rxui:ReactiveUserControl>
