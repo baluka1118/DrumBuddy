@@ -322,6 +322,29 @@
                                            Opacity="0.8" Text="Compare" />
                             </StackPanel>
                         </Button>
+                        <Button Grid.Row="0" Grid.Column="5"
+                                VerticalAlignment="Center"
+                                Margin="8,-5,0,0"
+                                Padding="8,4"
+                                Background="Transparent"
+                                Click="PlayMidiButton_OnClick">
+                            <StackPanel Orientation="Horizontal">
+                                <PathIcon Data="{StaticResource Resume}"
+                                          Width="16" Height="16" Margin="0,0,10,0"
+                                          IsVisible="{Binding !IsPlayingMidi}" />
+                                <PathIcon Data="{StaticResource Pause}"
+                                          Width="16" Height="16" Margin="0,0,10,0"
+                                          IsVisible="{Binding IsPlayingMidi}" />
+                                <TextBlock Text="Play MIDI"
+                                           FontWeight="SemiBold"
+                                           Opacity="0.8"
+                                           IsVisible="{Binding !IsPlayingMidi}" />
+                                <TextBlock Text="Stop"
+                                           FontWeight="SemiBold"
+                                           Opacity="0.8"
+                                           IsVisible="{Binding IsPlayingMidi}" />
+                            </StackPanel>
+                        </Button>
                         <Button Grid.Row="0" Grid.Column="4"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"

@@ -11,7 +11,20 @@ namespace DrumBuddy.IO.Services;
 
 public static class MidiExporter
 {
+    private const int DrumChannel = 9;
+
     public static void ExportSheetToMidi(Sheet sheet, string filePath)
+    {
+        var midiFile = BuildMidiFile(sheet);
+
+        var dir = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrWhiteSpace(dir))
+            Directory.CreateDirectory(dir);
+
+        midiFile.Write(filePath, true);
+    }
+
+    public static MidiFile BuildMidiFile(Sheet sheet)
     {
         var midiFile = new MidiFile();
         var trackChunk = new TrackChunk();
@@ -52,10 +65,16 @@ public static class MidiExporter
 
                 foreach (var note in ng)
                 {
+                    if (note.Drum == Drum.Rest)
+                        continue;
+
                     var midiNoteNumber = (SevenBitNumber)(int)note.Drum;
 
                     notesCollection.Add(new Melanchall.DryWetMidi.Interaction.Note(
-                        midiNoteNumber, durationTicks, groupStartTick));
+                        midiNoteNumber, durationTicks, groupStartTick)
+                    {
+                        Channel = (FourBitNumber)DrumChannel
+                    });
                 }
 
                 currentTick += durationTicks;
@@ -63,12 +82,7 @@ public static class MidiExporter
         }
 
         notesManager.SaveChanges();
-
-        var dir = Path.GetDirectoryName(filePath);
-        if (!string.IsNullOrWhiteSpace(dir))
-            Directory.CreateDirectory(dir);
-
-        midiFile.Write(filePath, true);
+        return midiFile;
     }
 
     public static Sheet ImportMidiToSheet(string filePath, string name = "Imported", string description = "")

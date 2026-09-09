@@ -11,6 +11,7 @@ namespace DrumBuddy.ViewModels
         private bool _isSyncEnabled;
         private DateTime? _lastSyncedAt;
         private bool _isSyncing;
+        private bool _isPlayingMidi;
 
         public SheetViewModel(Sheet sheet)
         {
@@ -45,6 +46,12 @@ namespace DrumBuddy.ViewModels
         {
             get => _isSyncing;
             set => this.RaiseAndSetIfChanged(ref _isSyncing, value);
+        }
+
+        public bool IsPlayingMidi
+        {
+            get => _isPlayingMidi;
+            set => this.RaiseAndSetIfChanged(ref _isPlayingMidi, value);
         }
     }
 }
