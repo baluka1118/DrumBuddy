@@ -80,6 +80,7 @@ public sealed partial class ManualViewModel : ReactiveObject, IRoutableViewModel
 
     public void Reset()
     {
+        Editor?.StopMidiPlayback();
         Editor = null;
         EditorVisible = false;
         SheetListVisible = false;

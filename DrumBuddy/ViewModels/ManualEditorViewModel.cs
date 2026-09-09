@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls.Notifications;
@@ -11,6 +12,7 @@ using DrumBuddy.Core.Enums;
 using DrumBuddy.Core.Models;
 using DrumBuddy.Core.Services;
 using DrumBuddy.Extensions;
+using DrumBuddy.IO.Services;
 using DrumBuddy.Models;
 using DrumBuddy.Services;
 using DrumBuddy.ViewModels.HelperViewModels;
@@ -29,8 +31,11 @@ public partial class ManualEditorViewModel : ReactiveObject, IRoutableViewModel
     public const int MaxNotesPerColumn = 4; 
     private readonly SourceList<MeasureViewModel> _measureSource = new();
     private readonly List<bool[,]> _measureSteps;
+    private readonly ConfigurationService _configService;
+    private readonly MidiOutputService _midiOutputService;
     private readonly NotificationService _notificationService;
     private readonly Func<Task> _onClose;
+    private readonly SheetPlaybackService _playbackService;
     private readonly SheetService _sheetService;
     private readonly SourceCache<Sheet, string> _sheetSource = new(s => s.Name);
 
@@ -58,6 +63,7 @@ public partial class ManualEditorViewModel : ReactiveObject, IRoutableViewModel
     [Reactive] private string? _description;
     [Reactive] private bool _editorVisible;
 
+    [Reactive] private bool _isPlaying;
     [Reactive] private bool _isSaved = true;
     [Reactive] private string? _name;
     private Guid _sheetId;
@@ -66,7 +72,12 @@ public partial class ManualEditorViewModel : ReactiveObject, IRoutableViewModel
         Func<Task> onClose)
     {
         _sheetService = sheetService;
+        _playbackService = Locator.Current.GetRequiredService<SheetPlaybackService>();
+        _midiOutputService = Locator.Current.GetRequiredService<MidiOutputService>();
+        _configService = Locator.Current.GetRequiredService<ConfigurationService>();
         _notificationService = Locator.Current.GetRequiredService<NotificationService>("MainWindowNotificationService");
+        _playbackService.PlaybackFinished += (_, _) =>
+            RxApp.MainThreadScheduler.Schedule(() => IsPlaying = false);
         HostScreen = host;
         UrlPathSegment = "manual-editor";
         _sheetId = Guid.NewGuid();
@@ -133,6 +144,7 @@ public partial class ManualEditorViewModel : ReactiveObject, IRoutableViewModel
     public string MeasureDisplayText => $"Measure {CurrentMeasureIndex + 1} of {_measureSteps.Count}";
     public Interaction<SheetCreationData, SheetNameAndDescription> ShowSaveDialog { get; } = new();
     public Interaction<Unit, Confirmation> ShowConfirmation { get; } = new();
+    public Interaction<MidiDeviceShortInfo[], MidiDeviceShortInfo?> ChooseMidiOutputDevice { get; } = new();
 
     public IScreen HostScreen { get; }
     public string? UrlPathSegment { get; }
@@ -294,8 +306,35 @@ public partial class ManualEditorViewModel : ReactiveObject, IRoutableViewModel
     }
 
     [ReactiveCommand]
+    private async Task PlayMidi()
+    {
+        if (IsPlaying)
+        {
+            StopPlayback();
+            return;
+        }
+
+        CurrentSheet = BuildSheet();
+        if (!await EnsureMidiOutputConnectedAsync())
+            return;
+
+        if (_playbackService.TryPlay(CurrentSheet))
+        {
+            IsPlaying = true;
+            return;
+        }
+
+        _notificationService.ShowNotification(new Notification(
+            "Playback failed",
+            "Could not send MIDI to the selected output device.",
+            NotificationType.Error));
+    }
+
+    [ReactiveCommand]
     private async Task NavigateBack()
     {
+        StopPlayback();
+
         if (!IsSaved)
         {
             var result = await ShowConfirmation.Handle(Unit.Default);
@@ -556,4 +595,19 @@ public partial class ManualEditorViewModel : ReactiveObject, IRoutableViewModel
 
         BuildMatrixRowsFromCurrentMeasure();
     }
+
+    public void StopMidiPlayback()
+    {
+        _playbackService.Stop();
+        IsPlaying = false;
+    }
+
+    private void StopPlayback() => StopMidiPlayback();
+
+    private Task<bool> EnsureMidiOutputConnectedAsync() =>
+        MidiOutputConnectionHelper.EnsureConnectedAsync(
+            _midiOutputService,
+            _configService,
+            _notificationService,
+            async devices => await ChooseMidiOutputDevice.Handle(devices));
 }

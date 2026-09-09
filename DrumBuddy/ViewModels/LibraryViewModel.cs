@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
@@ -30,7 +31,10 @@ public partial class LibraryViewModel : ReactiveObject, ILibraryViewModel
     private readonly FileStorageInteractionService _fileStorageInteractionService;
 
     private readonly MainWindow _mainWindow;
+    private readonly ConfigurationService _configurationService;
+    private readonly MidiOutputService _midiOutputService;
     private readonly MidiService _midiService;
+    private readonly SheetPlaybackService _playbackService;
 
     private readonly NotificationService _notificationService;
     private readonly PdfGenerator _pdfGenerator;
@@ -45,6 +49,7 @@ public partial class LibraryViewModel : ReactiveObject, ILibraryViewModel
     [Reactive] private SheetViewModel _selectedSheet;
     [Reactive] private SortOption _selectedSortOption = SortOption.Name;
     private readonly UserService _userService;
+    private SheetViewModel? _playingSheet;
 
     public LibraryViewModel(IScreen hostScreen, SheetService sheetService,
         PdfGenerator pdfGenerator,
@@ -57,6 +62,11 @@ public partial class LibraryViewModel : ReactiveObject, ILibraryViewModel
         _pdfGenerator = pdfGenerator;
         _fileStorageInteractionService = fileStorageInteractionService;
         _midiService = midiService;
+        _playbackService = Locator.Current.GetRequiredService<SheetPlaybackService>();
+        _midiOutputService = Locator.Current.GetRequiredService<MidiOutputService>();
+        _configurationService = Locator.Current.GetRequiredService<ConfigurationService>();
+        _playbackService.PlaybackFinished += (_, _) =>
+            RxApp.MainThreadScheduler.Schedule(() => StopMidiPlayback());
         HostScreen = hostScreen;
         _sheetService = sheetService;
         var sortChanged = this.WhenAnyValue(vm => vm.SelectedSortOption, vm => vm.IsSortDescending)
@@ -177,6 +187,7 @@ public partial class LibraryViewModel : ReactiveObject, ILibraryViewModel
     public Interaction<Sheet, Sheet?> ShowEditDialog { get; } = new();
     public Interaction<(Sheet, Sheet), Unit> ShowCompareDialog { get; } = new();
     public Interaction<ConfirmationViewModel, Confirmation> ShowConfirmationDialog { get; } = new();
+    public Interaction<MidiDeviceShortInfo[], MidiDeviceShortInfo?> ChooseMidiOutputDevice { get; } = new();
 
 
     public bool SheetExists(string sheetName)
@@ -287,6 +298,7 @@ public partial class LibraryViewModel : ReactiveObject, ILibraryViewModel
     [ReactiveCommand]
     private void NavigateToRecordingView()
     {
+        StopMidiPlayback();
         var mainVm = HostScreen as MainViewModel;
         mainVm!.NavigateFromCode(Locator.Current.GetRequiredService<RecordingViewModel>());
     }
@@ -294,6 +306,7 @@ public partial class LibraryViewModel : ReactiveObject, ILibraryViewModel
     [ReactiveCommand]
     private void NavigateToManualView()
     {
+        StopMidiPlayback();
         var mainVm = HostScreen as MainViewModel;
         mainVm!.NavigateFromCode(Locator.Current.GetRequiredService<ManualViewModel>());
     }
@@ -325,8 +338,51 @@ public partial class LibraryViewModel : ReactiveObject, ILibraryViewModel
     }
 
     [ReactiveCommand]
+    private async Task PlaySheetMidi(SheetViewModel sheet)
+    {
+        if (_playingSheet == sheet && _playbackService.IsPlaying)
+        {
+            StopMidiPlayback();
+            return;
+        }
+
+        StopMidiPlayback();
+        SelectedSheet = sheet;
+
+        if (!await MidiOutputConnectionHelper.EnsureConnectedAsync(
+                _midiOutputService,
+                _configurationService,
+                _notificationService,
+                async devices => await ChooseMidiOutputDevice.Handle(devices)))
+            return;
+
+        if (_playbackService.TryPlay(sheet.Sheet))
+        {
+            _playingSheet = sheet;
+            sheet.IsPlayingMidi = true;
+            return;
+        }
+
+        _notificationService.ShowNotification(new Notification(
+            "Playback failed",
+            "Could not send MIDI to the selected output device.",
+            NotificationType.Error));
+    }
+
+    public void StopMidiPlayback()
+    {
+        _playbackService.Stop();
+        if (_playingSheet is not null)
+        {
+            _playingSheet.IsPlayingMidi = false;
+            _playingSheet = null;
+        }
+    }
+
+    [ReactiveCommand]
     private async Task ManuallyEditSheet()
     {
+        StopMidiPlayback();
         var mainVm = HostScreen as MainViewModel;
         var manualVm = Locator.Current.GetRequiredService<ManualViewModel>();
         mainVm!.NavigateFromCode(manualVm);
@@ -440,6 +496,8 @@ public interface ILibraryViewModel : IRoutableViewModel
     Interaction<Sheet, Sheet> ShowRenameDialog { get; }
     Interaction<(Sheet, Sheet), Unit> ShowCompareDialog { get; }
     Interaction<ConfirmationViewModel, Confirmation> ShowConfirmationDialog { get; }
+    Interaction<MidiDeviceShortInfo[], MidiDeviceShortInfo?> ChooseMidiOutputDevice { get; }
+    ReactiveCommand<SheetViewModel, Unit> PlaySheetMidiCommand { get; }
     ReactiveCommand<Unit, Unit> DuplicateSheetCommand { get; }
     bool SheetExists(string sheetName);
     Task SaveSheet(Sheet sheet);

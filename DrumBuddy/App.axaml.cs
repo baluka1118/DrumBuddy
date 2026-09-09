@@ -268,5 +268,8 @@ public class App : Application
         CurrentMutable.RegisterConstant(
             new ConfigurationRepository(dbContext, Locator.Current.GetRequiredService<SerializationService>()));
         CurrentMutable.RegisterConstant(new MidiService());
+        CurrentMutable.RegisterConstant(new MidiOutputService());
+        CurrentMutable.RegisterConstant(new SheetPlaybackService(
+            Locator.Current.GetRequiredService<MidiOutputService>()));
     }
 }

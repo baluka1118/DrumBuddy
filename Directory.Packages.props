@@ -15,7 +15,7 @@
     <PackageVersion Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.6" />
     <PackageVersion Include="Deadpikle.AvaloniaProgressRing" Version="0.10.10" />
     <PackageVersion Include="ManagedBass.Midi" Version="4.0.1" />
-    <PackageVersion Include="Melanchall.DryWetMidi.Nativeless" Version="8.0.2" />
+    <PackageVersion Include="Melanchall.DryWetMidi" Version="8.0.2" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.10" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.10" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />

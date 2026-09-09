@@ -80,7 +80,25 @@ public partial class LibraryView : ReactiveUserControl<ILibraryViewModel>
                 .DisposeWith(d);
             this.BindInteraction(ViewModel, vm => vm.ShowConfirmationDialog, ConfirmationHandler)
                 .DisposeWith(d);
+            this.BindInteraction(ViewModel, vm => vm.ChooseMidiOutputDevice, HandleMidiOutputDeviceChoosing)
+                .DisposeWith(d);
+            d.Add(Disposable.Create(() =>
+            {
+                if (ViewModel is LibraryViewModel libraryVm)
+                    libraryVm.StopMidiPlayback();
+            }));
         });
+    }
+
+    private async Task HandleMidiOutputDeviceChoosing(
+        IInteractionContext<MidiDeviceShortInfo[], MidiDeviceShortInfo?> context)
+    {
+        var dialog = new MidiDeviceChooserView
+        {
+            ViewModel = new MidiDeviceChooserViewModel(context.Input)
+        };
+        var result = await dialog.ShowDialog<MidiDeviceShortInfo?>(_mainWindow);
+        context.SetOutput(result);
     }
 
     private IEnumerable<Sheet> SelectedSheets => SheetsLB.SelectedItems.Cast<Sheet>();
@@ -120,6 +138,15 @@ public partial class LibraryView : ReactiveUserControl<ILibraryViewModel>
         var view = new RenameSheetView { ViewModel = new RenameSheetViewModel(arg.Input) };
         var result = await view.ShowDialog<Sheet>(_mainWindow);
         arg.SetOutput(result);
+    }
+
+    private void PlayMidiButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: SheetViewModel sheet })
+        {
+            SheetsListBox.SelectedItem = sheet;
+            ViewModel!.PlaySheetMidiCommand.Execute(sheet).Subscribe();
+        }
     }
 
     private void CompareButton_OnClick(object? sender, RoutedEventArgs e)

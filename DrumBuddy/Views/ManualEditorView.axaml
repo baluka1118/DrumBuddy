@@ -54,15 +54,32 @@
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center" />
                     </StackPanel>
-                    <Button Grid.Column="2" x:Name="SaveButton"
-                            Background="{DynamicResource HeaderGray}" HorizontalAlignment="Right">
-                        <StackPanel Orientation="Horizontal">
-                            <PathIcon Data="{StaticResource Save}" Margin="0,0,0,5" />
-                            <TextBlock Text="Save" FontFamily="{StaticResource NunitoFont}"
-                                       FontSize="24"
-                                       Margin="10" />
-                        </StackPanel>
-                    </Button>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="PlayMidiButton"
+                                Background="{DynamicResource HeaderGray}"
+                                Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <PathIcon Data="{StaticResource Resume}"
+                                          IsVisible="{Binding !IsPlaying}" />
+                                <PathIcon Data="{StaticResource Pause}"
+                                          IsVisible="{Binding IsPlaying}" />
+                                <TextBlock x:Name="PlayMidiButtonText"
+                                           Text="Play MIDI"
+                                           FontFamily="{StaticResource NunitoFont}"
+                                           FontSize="24"
+                                           Margin="10" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="SaveButton"
+                                Background="{DynamicResource HeaderGray}">
+                            <StackPanel Orientation="Horizontal">
+                                <PathIcon Data="{StaticResource Save}" Margin="0,0,0,5" />
+                                <TextBlock Text="Save" FontFamily="{StaticResource NunitoFont}"
+                                           FontSize="24"
+                                           Margin="10" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </Border>
             <Border Grid.Row="1"

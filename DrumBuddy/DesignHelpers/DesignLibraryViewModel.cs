@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DrumBuddy.Core.Enums;
 using DrumBuddy.Core.Models;
 using DrumBuddy.Models;
+using DrumBuddy.IO.Services;
 using DrumBuddy.ViewModels;
 using DrumBuddy.ViewModels.Dialogs;
 using ReactiveUI;
@@ -73,6 +74,8 @@ public class DesignLibraryViewModel : ReactiveObject, ILibraryViewModel
     public Interaction<Sheet, Sheet> ShowRenameDialog { get; } = new();
     public Interaction<(Sheet, Sheet), Unit> ShowCompareDialog { get; }
     public Interaction<ConfirmationViewModel, Confirmation> ShowConfirmationDialog { get; }
+    public Interaction<MidiDeviceShortInfo[], MidiDeviceShortInfo?> ChooseMidiOutputDevice { get; } = new();
+    public ReactiveCommand<SheetViewModel, Unit> PlaySheetMidiCommand { get; } = ReactiveCommand.Create<SheetViewModel>(_ => { });
     public ReactiveCommand<Unit, Unit> DuplicateSheetCommand { get; set; }
 
     public Task CompareSheets(Sheet baseSheet, Sheet comparedSheet)

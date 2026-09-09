@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -14,6 +15,7 @@ using Avalonia.ReactiveUI;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DrumBuddy.DesignHelpers;
+using DrumBuddy.IO.Services;
 using DrumBuddy.Models;
 using DrumBuddy.Services;
 using DrumBuddy.ViewModels;
@@ -73,6 +75,15 @@ public partial class ManualEditorView : ReactiveUserControl<ManualEditorViewMode
                 .DisposeWith(d);
             this.BindCommand(ViewModel, vm => vm.SaveCommand, v => v.SaveButton)
                 .DisposeWith(d);
+            this.BindCommand(ViewModel, vm => vm.PlayMidiCommand, v => v.PlayMidiButton)
+                .DisposeWith(d);
+            this.OneWayBind(ViewModel, vm => vm.IsPlaying, v => v.BpmNumeric.IsEnabled, playing => !playing)
+                .DisposeWith(d);
+            this.WhenAnyValue(v => v.ViewModel!.IsPlaying)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(playing => PlayMidiButtonText.Text = playing ? "Stop" : "Play MIDI")
+                .DisposeWith(d);
+            this.BindInteraction(ViewModel, vm => vm.ChooseMidiOutputDevice, HandleMidiOutputDeviceChoosing);
             this.WhenAnyValue(v => v.ViewModel)
                 .WhereNotNull()
                 .Subscribe(vm => { UpdateMeasureBorders(vm.CurrentMeasureIndex); })
@@ -101,6 +112,18 @@ public partial class ManualEditorView : ReactiveUserControl<ManualEditorViewMode
             }
         };
         var result = await saveView.ShowDialog<Confirmation>(mainWindow);
+        context.SetOutput(result);
+    }
+
+    private async Task HandleMidiOutputDeviceChoosing(
+        IInteractionContext<MidiDeviceShortInfo[], MidiDeviceShortInfo?> context)
+    {
+        var mainWindow = Locator.Current.GetService<MainWindow>();
+        var dialog = new MidiDeviceChooserView
+        {
+            ViewModel = new MidiDeviceChooserViewModel(context.Input)
+        };
+        var result = await dialog.ShowDialog<MidiDeviceShortInfo?>(mainWindow);
         context.SetOutput(result);
     }
 

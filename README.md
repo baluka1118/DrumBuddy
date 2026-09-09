@@ -144,7 +144,9 @@ After installation:
 - Create new sheets either by recording your beats, or creating them manually
 - Sync your work to the cloud, so you can access it from any device
 - Compare sheets to see the difference
-<!-- For more information, <a href="https://docs.drumbuddy.hu/">check out the docs.</a> -->
+- Play sheets via MIDI output (e.g. GarageBand on macOS through the IAC Driver)
+
+📖 **Full user guide:** [docs/USER_GUIDE.md](docs/USER_GUIDE.md) · [HTML version](docs/USER_GUIDE.html)
 
 ## Roadmap
 - [x] MIDI, and MusicXML export/import
